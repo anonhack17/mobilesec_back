@@ -1,5 +1,4 @@
 import subprocess
-
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -16,11 +15,12 @@ def calculate_hash(file_path):
     return hash_md5.hexdigest()
 
 def scan_directory(directory_path):
-    known_signatures = set(exploits)
+    known_signatures = set(list)
     exploits_found = []
 
     for root, dirs, files in os.walk(directory_path):
         for file_name in files:
+            print(file_name)
             file_path = os.path.join(root, file_name)
             file_hash = calculate_hash(file_path)
             if file_hash in known_signatures:
