@@ -47,26 +47,45 @@ def scan_directory_view(request):
     except Exception as e:
         return JsonResponse({"error": f"Ошибка сервера: {str(e)}"}, status=500)
 
+
+import json
+import os
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 @csrf_exempt
 def remove_exploits_view(request):
-    if request.method == 'POST':
+    if request.method == 'GET':
+        # Получаем параметр exploits из строки запроса
+        exploits_param = request.GET.get('exploits', '')
+
+        # Разбираем JSON строку в словарь
         try:
-            data = json.loads(request.body)
-            exploits = data.get('exploits', [])
+            exploits_dict = json.loads(exploits_param)
+            print(exploits_dict)
+            exploits_list = exploits_dict.get('exploits', [])
+            print(exploits_list)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
 
-            # Далее ваш код для удаления эксплойтов
-            for exploit in exploits:
-                exploit_file = exploit.split(" ")[1]
-                if os.path.exists(exploit_file):
-                    os.remove(exploit_file)
-                else:
-                    return JsonResponse({'error': f'Файл {exploit_file} не существует'}, status=404)
+        # Список для хранения удаленных эксплойтов
+        removed_exploits = []
 
-            return JsonResponse({'success': True})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    else:
-        return JsonResponse({'error': 'Метод не поддерживается'}, status=405)
+        # Перебираем каждый эксплойт из списка
+        for exploit in exploits_list:
+            exploit_file = exploit.get('path', '').strip()
+            if os.path.exists(exploit_file):
+                os.remove(exploit_file)
+                removed_exploits.append(exploit_file)
+                print(f"Файл {exploit_file} удален")
+            else:
+                print(f"Файл {exploit_file} не существует")
+
+        # Возвращаем ответ с информацией о удаленных эксплойтах и списком эксплойтов
+        return JsonResponse({'removed': removed_exploits, 'exploits': exploits_list}, status=200)
+
+    # Если запрос не GET, возвращаем ошибку метода
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 @csrf_exempt
